@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List with Time-Based Reminder</title>
+    <!-- Google Fonts for modern typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f1f5f9, #cfd8dc); /* Soft pastel gradient background */
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+
+        .todo-container {
+            background-color: white;
+            border-radius: 15px;
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        .todo-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .todo-header h1 {
+            font-size: 2.5rem;
+            font-weight: 500;
+            color: #2e3a46;
+            margin-bottom: 10px;
+        }
+
+        .todo-input, .todo-time-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            margin-bottom: 15px;
+            background-color: #f7fafc;
+            transition: border-color 0.3s;
+        }
+
+        .todo-input:focus, .todo-time-input:focus {
+            border-color: #6200ea;
+            outline: none;
+        }
+
+        .add-btn {
+            width: 100%;
+            padding: 15px;
+            background-color: #6200ea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .add-btn:hover {
+            background-color: #3700b3;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        li {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 15px;
+            margin-bottom: 12px;
+            background-color: #f9f9f9;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        li:hover {
+            background-color: #e8e8e8;
+        }
+
+        .task-text {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 10px; /* Space between task name and time */
+        }
+
+        .completed .task-text {
+            text-decoration: line-through;
+            color: #888;
+        }
+
+        .task-time {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #9b59b6;
+            margin-bottom: 15px; /* More space before buttons */
+        }
+
+        .task-actions {
+            display: flex;
+            justify-content: flex-start;
+            gap: 12px;
+        }
+
+        .btn-complete, .btn-delete {
+            border: none;
+            padding: 8px 18px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.3s, transform 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-complete {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .btn-complete:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        .btn-delete {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background-color: #c0392b;
+            transform: scale(1.05);
+        }
+
+        /* Media Query for Mobile Responsiveness */
+        @media (max-width: 600px) {
+            .todo-container {
+                padding: 20px;
+                width: 90%;
+            }
+
+            .todo-header h1 {
+                font-size: 2rem;
+            }
+
+            .todo-input, .todo-time-input {
+                font-size: 1rem;
+            }
+
+            .add-btn {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="todo-container">
+        <div class="todo-header">
+            <h1>To-Do List with Time-Based Reminder</h1>
+        </div>
+        <input type="text" id="taskInput" class="todo-input" placeholder="Enter your task">
+        <input type="time" id="timeInput" class="todo-time-input" placeholder="Set time for the task">
+        <button id="addButton" class="add-btn">Add Task</button>
+
+        <ul id="taskList"></ul>
+    </div>
+
+    <audio id="reminderSound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
+
+    <script>
+        // Get elements
+        const taskInput = document.getElementById("taskInput");
+        const timeInput = document.getElementById("timeInput");
+        const addButton = document.getElementById("addButton");
+        const taskList = document.getElementById("taskList");
+        const reminderSound = document.getElementById("reminderSound");
+
+        // Add task function
+        addButton.addEventListener("click", function() {
+            const taskText = taskInput.value.trim();
+            const taskTime = timeInput.value.trim();
+
+            if (taskText === "") {
+                alert("Please enter a task!");
+                return;
+            }
+
+            if (taskTime === "") {
+                alert("Please set a time for the task!");
+                return;
+            }
+
+            const li = document.createElement("li");
+
+            // Task text
+            const textNode = document.createElement("span");
+            textNode.classList.add("task-text");
+            textNode.textContent = taskText;
+            li.appendChild(textNode);
+
+            // Task time
+            const taskTimeDisplay = document.createElement("div");
+            taskTimeDisplay.classList.add("task-time");
+            taskTimeDisplay.textContent = "Task Time: " + taskTime;
+            li.appendChild(taskTimeDisplay);
+
+            // Task actions (Complete and Delete buttons)
+            const taskActions = document.createElement("div");
+            taskActions.classList.add("task-actions");
+
+            // Reminder setup
+            const taskTimeObj = new Date();
+            const taskTimeParts = taskTime.split(":");
+            taskTimeObj.setHours(taskTimeParts[0], taskTimeParts[1], 0);
+
+            // Function to check if reminder is needed
+            function checkReminder() {
+                const currentTime = new Date();
+                const timeDifference = taskTimeObj - currentTime;
+
+                if (timeDifference > 0 && timeDifference <= 10 * 60 * 1000) { // Trigger reminder 10 mins before
+                    reminderSound.play();
+                    alert(`Reminder: Your task "${taskText}" is coming up soon!`);
+                }
+
+                if (currentTime >= taskTimeObj) {
+                    // Mark the task as completed
+                    textNode.classList.add("completed");
+                    taskTimeDisplay.textContent = "Task Completed!";
+                    clearInterval(reminderInterval); // Stop reminder once completed
+                }
+            }
+
+            // Check reminder every minute
+            const reminderInterval = setInterval(checkReminder, 60000);
+
+            // Complete button
+            const completeButton = document.createElement("button");
+            completeButton.textContent = "Complete";
+            completeButton.classList.add("btn-complete");
+            completeButton.addEventListener("click", function() {
+                // Mark task as completed
+                textNode.classList.add("completed");
+                taskTimeDisplay.textContent = "Task Completed!";
+                clearInterval(reminderInterval); // Stop reminder once completed
+            });
+            taskActions.appendChild(completeButton);
+
+            // Delete button
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "Delete";
+            deleteButton.classList.add("btn-delete");
+            deleteButton.addEventListener("click", function() {
+                clearInterval(reminderInterval); // Stop reminder when deleted
+                li.remove();
+            });
+            taskActions.appendChild(deleteButton);
+
+            li.appendChild(taskActions);
+
+            // Add task to list
+            taskList.appendChild(li);
+
+            // Clear input fields
+            taskInput.value = "";
+            timeInput.value = "";
+        });
+
+        // Enter key functionality for adding tasks
+        taskInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                addButton.click();
+            }
+        });
+    </script>
+</body>
+</html>
